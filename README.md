@@ -43,7 +43,7 @@ flowchart TB
 | File | Resources |
 | --- | --- |
 | `terraform/ec2.tf` | A `t3.micro` Amazon Linux 2 instance bootstrapped by `scripts/install_nginx.sh`, and a security group that allows HTTP in |
-| `terraform/iam.tf` | The instance role (`AmazonSSMManagedInstanceCore`, `CloudWatchAgentServerPolicy`), the Lambda role (`ssm:SendCommand` plus CloudWatch Logs), and the permission that lets the alarm invoke the function |
+| `terraform/iam.tf` | The instance role (`AmazonSSMManagedInstanceCore`, `CloudWatchAgentServerPolicy`), the Lambda role (`ssm:SendCommand` plus CloudWatch Logs), and a permission that lets only this alarm, in your account, invoke the function |
 | `terraform/cloudwatch.tf` | The `nginx-down` metric alarm, with the Lambda function as its action |
 | `terraform/lambda.tf` | The Python 3.10 healer, packaged from `lambda/heal_instance.zip`, with the instance ID passed in as an environment variable |
 | `terraform/variables.tf` | `region` (default `us-west-2`) and `instance_type` (default `t3.micro`) |
@@ -52,8 +52,7 @@ flowchart TB
 
 You need Terraform and AWS credentials for an account where you can create EC2,
 IAM, Lambda and CloudWatch resources. The AMI ID in `ec2.tf` is for `us-west-2`,
-and `iam.tf` pins the AWS account allowed to invoke the function, so change both if
-you deploy somewhere else.
+so change it if you deploy to another region.
 
 ```bash
 # rebuild the Lambda package after changing the handler

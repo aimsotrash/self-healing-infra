@@ -79,9 +79,10 @@ resource "aws_lambda_permission" "allow_cloudwatch" {
   statement_id  = "AllowExecutionFromCloudWatch"
   action        = "lambda:InvokeFunction"
   function_name = aws_lambda_function.healer.function_name
-  principal     = "cloudwatch.amazonaws.com"
+  principal     = "lambda.alarms.cloudwatch.amazonaws.com"
 
-  source_account = "206875041927"
+  source_account = data.aws_caller_identity.current.account_id
+  source_arn     = aws_cloudwatch_metric_alarm.nginx_down_alarm.arn
 
   depends_on = [
     aws_lambda_function.healer

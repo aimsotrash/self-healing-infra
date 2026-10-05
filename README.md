@@ -11,15 +11,16 @@ Python (boto3) · Bash
 ## How it works
 
 ```mermaid
-flowchart LR
+flowchart TB
     subgraph ec2["EC2 instance · Amazon Linux 2"]
-        nginx["nginx"]
+        direction LR
         check["cron, every minute<br/>nginx_health_check.sh"]
+        nginx["nginx"]
         agent["SSM Agent"]
     end
     check -->|"systemctl is-active nginx"| nginx
     check -->|"put-metric-data<br/>NginxRunning = 1 or 0"| metric[("CloudWatch metric<br/>Custom/Nginx")]
-    metric --> alarm{"Alarm: nginx-down<br/>minimum below 1 over 60 s<br/>missing data = breaching"}
+    metric --> alarm(["Alarm: nginx-down<br/>minimum below 1 over 60 s<br/>missing data = breaching"])
     alarm -->|"alarm action"| lambda["Lambda<br/>heal_instance.py"]
     lambda -->|"ssm:SendCommand<br/>AWS-RunShellScript"| agent
     agent -->|"systemctl start nginx"| nginx

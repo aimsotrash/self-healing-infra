@@ -24,9 +24,20 @@ resource "aws_iam_instance_profile" "ec2_ssm_profile" {
   role = aws_iam_role.ec2_ssm_role.name
 }
 
-resource "aws_iam_role_policy_attachment" "ec2_cloudwatch_attach" {
-  role       = aws_iam_role.ec2_ssm_role.name
-  policy_arn = "arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy"
+resource "aws_iam_role_policy" "ec2_put_metric" {
+  name = "put-nginx-metric"
+  role = aws_iam_role.ec2_ssm_role.name
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect = "Allow"
+      Action = "cloudwatch:PutMetricData"
+      # PutMetricData has no resource-level permissions; the namespace condition scopes it
+      Resource  = "*"
+      Condition = { StringEquals = { "cloudwatch:namespace" = "Custom/Nginx" } }
+    }]
+  })
 }
 
 resource "aws_iam_role" "lambda_role" {
@@ -44,6 +55,10 @@ resource "aws_iam_role" "lambda_role" {
   })
 }
 
+locals {
+  lambda_log_group_arn = "arn:aws:logs:${var.region}:${data.aws_caller_identity.current.account_id}:log-group:/aws/lambda/${aws_lambda_function.healer.function_name}"
+}
+
 resource "aws_iam_policy" "lambda_ssm_policy" {
   name = "lambda-ssm-policy"
 
@@ -51,9 +66,12 @@ resource "aws_iam_policy" "lambda_ssm_policy" {
     Version = "2012-10-17"
     Statement = [
       {
-        Effect   = "Allow"
-        Action   = ["ssm:SendCommand"]
-        Resource = "*"
+        Effect = "Allow"
+        Action = ["ssm:SendCommand"]
+        Resource = [
+          aws_instance.web.arn,
+          "arn:aws:ssm:${var.region}::document/AWS-RunShellScript"
+        ]
       },
       {
         Effect = "Allow"
@@ -62,7 +80,8 @@ resource "aws_iam_policy" "lambda_ssm_policy" {
           "logs:CreateLogStream",
           "logs:PutLogEvents"
         ]
-        Resource = "*"
+        # The function's own log group, and the log streams in it
+        Resource = [local.lambda_log_group_arn, "${local.lambda_log_group_arn}:*"]
       }
     ]
   })

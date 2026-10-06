@@ -43,7 +43,7 @@ flowchart TB
 | File | Resources |
 | --- | --- |
 | `terraform/ec2.tf` | A `t3.micro` instance on the latest Amazon Linux 2023 AMI (looked up from AWS's public SSM parameter), bootstrapped by `scripts/install_nginx.sh`, and a security group that allows HTTP in |
-| `terraform/iam.tf` | The instance role (`AmazonSSMManagedInstanceCore`, `CloudWatchAgentServerPolicy`), the Lambda role (`ssm:SendCommand` plus CloudWatch Logs), and a permission that lets only this alarm, in your account, invoke the function |
+| `terraform/iam.tf` | The instance role (`AmazonSSMManagedInstanceCore`, plus `cloudwatch:PutMetricData` limited to the `Custom/Nginx` namespace), the Lambda role (`ssm:SendCommand` for `AWS-RunShellScript` on this instance only, plus writing to its own log group), and a permission that lets only this alarm, in your account, invoke the function |
 | `terraform/cloudwatch.tf` | The `nginx-down` metric alarm, with the Lambda function as its action |
 | `terraform/lambda.tf` | The Python 3.13 healer, zipped from `lambda/heal_instance.py` by the `archive_file` data source, with the instance ID passed in as an environment variable |
 | `terraform/variables.tf` | `region` (default `us-west-2`) and `instance_type` (default `t3.micro`) |
@@ -89,7 +89,8 @@ cd terraform && terraform destroy
 
 - **SSM instead of SSH.** The Lambda never holds a key and the security group never
   opens port 22. IAM decides who can run commands on the instance, and Systems
-  Manager records every command it runs.
+  Manager records every command it runs. The function's role can run only
+  `AWS-RunShellScript`, and only on this instance.
 - **Silence is a failure.** If the instance hangs or the health check stops running,
   the metric goes quiet. Treating missing data as breaching means silence trips the
   alarm instead of hiding the problem.

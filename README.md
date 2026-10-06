@@ -12,9 +12,9 @@ Python (boto3) · Bash
 
 ```mermaid
 flowchart TB
-    subgraph ec2["EC2 instance · Amazon Linux 2"]
+    subgraph ec2["EC2 instance · Amazon Linux 2023"]
         direction LR
-        check["cron, every minute<br/>nginx_health_check.sh"]
+        check["systemd timer, every minute<br/>nginx_health_check.sh"]
         nginx["nginx"]
         agent["SSM Agent"]
     end
@@ -26,9 +26,9 @@ flowchart TB
     agent -->|"systemctl start nginx"| nginx
 ```
 
-1. **Detect.** The instance's user data (`scripts/install_nginx.sh`) installs nginx,
-   the CloudWatch agent and a health-check script that cron runs every minute. The
-   script publishes `NginxRunning` to the `Custom/Nginx` namespace: `1` when
+1. **Detect.** The instance's user data (`scripts/install_nginx.sh`) installs nginx
+   and a health-check script that a systemd timer runs every minute. The script
+   publishes `NginxRunning` to the `Custom/Nginx` namespace: `1` when
    `systemctl is-active nginx` succeeds, `0` when it doesn't.
 2. **Decide.** The `nginx-down` alarm goes into `ALARM` when the metric's minimum
    over a 60-second period drops below 1. Missing data counts as breaching, so an
@@ -42,7 +42,7 @@ flowchart TB
 
 | File | Resources |
 | --- | --- |
-| `terraform/ec2.tf` | A `t3.micro` Amazon Linux 2 instance bootstrapped by `scripts/install_nginx.sh`, and a security group that allows HTTP in |
+| `terraform/ec2.tf` | A `t3.micro` instance on the latest Amazon Linux 2023 AMI (looked up from AWS's public SSM parameter), bootstrapped by `scripts/install_nginx.sh`, and a security group that allows HTTP in |
 | `terraform/iam.tf` | The instance role (`AmazonSSMManagedInstanceCore`, `CloudWatchAgentServerPolicy`), the Lambda role (`ssm:SendCommand` plus CloudWatch Logs), and a permission that lets only this alarm, in your account, invoke the function |
 | `terraform/cloudwatch.tf` | The `nginx-down` metric alarm, with the Lambda function as its action |
 | `terraform/lambda.tf` | The Python 3.10 healer, packaged from `lambda/heal_instance.zip`, with the instance ID passed in as an environment variable |
@@ -51,8 +51,9 @@ flowchart TB
 ## Deploy
 
 You need Terraform and AWS credentials for an account where you can create EC2,
-IAM, Lambda and CloudWatch resources. The AMI ID in `ec2.tf` is for `us-west-2`,
-so change it if you deploy to another region.
+IAM, Lambda and CloudWatch resources. Terraform looks up the latest Amazon Linux
+2023 AMI in whichever `region` you pick, so once AWS publishes a newer one, the
+next `apply` replaces the instance.
 
 ```bash
 # rebuild the Lambda package after changing the handler
@@ -89,9 +90,9 @@ cd terraform && terraform destroy
 - **SSM instead of SSH.** The Lambda never holds a key and the security group never
   opens port 22. IAM decides who can run commands on the instance, and Systems
   Manager records every command it runs.
-- **Silence is a failure.** If the instance hangs or the cron job dies, the metric
-  goes quiet. Treating missing data as breaching means silence trips the alarm
-  instead of hiding the problem.
+- **Silence is a failure.** If the instance hangs or the health check stops running,
+  the metric goes quiet. Treating missing data as breaching means silence trips the
+  alarm instead of hiding the problem.
 - **One instance, one action.** The function heals the single instance whose ID
   Terraform passes in. CloudWatch runs alarm actions when the alarm changes state,
   so if a restart doesn't bring nginx back, the alarm stays in `ALARM` and nothing

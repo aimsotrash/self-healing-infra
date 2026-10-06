@@ -45,7 +45,7 @@ flowchart TB
 | `terraform/ec2.tf` | A `t3.micro` instance on the latest Amazon Linux 2023 AMI (looked up from AWS's public SSM parameter), bootstrapped by `scripts/install_nginx.sh`, and a security group that allows HTTP in |
 | `terraform/iam.tf` | The instance role (`AmazonSSMManagedInstanceCore`, `CloudWatchAgentServerPolicy`), the Lambda role (`ssm:SendCommand` plus CloudWatch Logs), and a permission that lets only this alarm, in your account, invoke the function |
 | `terraform/cloudwatch.tf` | The `nginx-down` metric alarm, with the Lambda function as its action |
-| `terraform/lambda.tf` | The Python 3.10 healer, packaged from `lambda/heal_instance.zip`, with the instance ID passed in as an environment variable |
+| `terraform/lambda.tf` | The Python 3.10 healer, zipped from `lambda/heal_instance.py` by the `archive_file` data source, with the instance ID passed in as an environment variable |
 | `terraform/variables.tf` | `region` (default `us-west-2`) and `instance_type` (default `t3.micro`) |
 
 ## Deploy
@@ -56,13 +56,13 @@ IAM, Lambda and CloudWatch resources. Terraform looks up the latest Amazon Linux
 next `apply` replaces the instance.
 
 ```bash
-# rebuild the Lambda package after changing the handler
-(cd lambda && zip -j heal_instance.zip heal_instance.py)
-
 cd terraform
 terraform init
 terraform apply        # prints instance_id and public_ip
 ```
+
+Terraform zips `lambda/heal_instance.py` on every plan, so a changed handler
+deploys with the next `apply`.
 
 ## Try it
 

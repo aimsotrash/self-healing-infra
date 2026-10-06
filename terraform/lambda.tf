@@ -10,7 +10,7 @@ resource "aws_lambda_function" "healer" {
   function_name = "self-healing-lambda"
   role          = aws_iam_role.lambda_role.arn
   handler       = "heal_instance.lambda_handler"
-  runtime       = "python3.10"
+  runtime       = "python3.13"
 
   filename         = data.archive_file.healer.output_path
   source_code_hash = data.archive_file.healer.output_base64sha256

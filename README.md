@@ -45,7 +45,7 @@ flowchart TB
 | `terraform/ec2.tf` | A `t3.micro` instance on the latest Amazon Linux 2023 AMI (looked up from AWS's public SSM parameter), bootstrapped by `scripts/install_nginx.sh`, and a security group that allows HTTP in |
 | `terraform/iam.tf` | The instance role (`AmazonSSMManagedInstanceCore`, `CloudWatchAgentServerPolicy`), the Lambda role (`ssm:SendCommand` plus CloudWatch Logs), and a permission that lets only this alarm, in your account, invoke the function |
 | `terraform/cloudwatch.tf` | The `nginx-down` metric alarm, with the Lambda function as its action |
-| `terraform/lambda.tf` | The Python 3.10 healer, zipped from `lambda/heal_instance.py` by the `archive_file` data source, with the instance ID passed in as an environment variable |
+| `terraform/lambda.tf` | The Python 3.13 healer, zipped from `lambda/heal_instance.py` by the `archive_file` data source, with the instance ID passed in as an environment variable |
 | `terraform/variables.tf` | `region` (default `us-west-2`) and `instance_type` (default `t3.micro`) |
 
 ## Deploy

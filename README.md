@@ -1,5 +1,7 @@
 # self-healing-infra
 
+[![CI](https://github.com/aimsotrash/self-healing-infra/actions/workflows/ci.yml/badge.svg)](https://github.com/aimsotrash/self-healing-infra/actions/workflows/ci.yml)
+
 An nginx web server on EC2 that repairs itself. A health check on the instance
 reports to CloudWatch every minute. When nginx goes down, or the instance stops
 reporting, a CloudWatch alarm invokes a Lambda function that restarts nginx through

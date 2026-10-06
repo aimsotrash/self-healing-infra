@@ -1,23 +1,22 @@
 resource "aws_iam_role" "ec2_ssm_role" {
-    name = "ec2_ssm_role"
-    assume_role_policy = jsonencode(
-        {
-        Version = "2012-10-17"
-    Statement = [{
-      Effect = "Allow"
-      Principal = {
-        Service = "ec2.amazonaws.com"
-      }
-      Action = "sts:AssumeRole"
-    }]
+  name = "ec2_ssm_role"
+  assume_role_policy = jsonencode(
+    {
+      Version = "2012-10-17"
+      Statement = [{
+        Effect = "Allow"
+        Principal = {
+          Service = "ec2.amazonaws.com"
+        }
+        Action = "sts:AssumeRole"
+      }]
     }
-    )
-  
+  )
 }
 
 resource "aws_iam_role_policy_attachment" "ec2_ssm_policy" {
-    role = aws_iam_role.ec2_ssm_role.name
-    policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
+  role       = aws_iam_role.ec2_ssm_role.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
 }
 
 resource "aws_iam_instance_profile" "ec2_ssm_profile" {
@@ -29,7 +28,6 @@ resource "aws_iam_role_policy_attachment" "ec2_cloudwatch_attach" {
   role       = aws_iam_role.ec2_ssm_role.name
   policy_arn = "arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy"
 }
-
 
 resource "aws_iam_role" "lambda_role" {
   name = "lambda-healer-role"
@@ -58,8 +56,8 @@ resource "aws_iam_policy" "lambda_ssm_policy" {
         Resource = "*"
       },
       {
-        Effect   = "Allow"
-        Action   = [
+        Effect = "Allow"
+        Action = [
           "logs:CreateLogGroup",
           "logs:CreateLogStream",
           "logs:PutLogEvents"
@@ -88,6 +86,3 @@ resource "aws_lambda_permission" "allow_cloudwatch" {
     aws_lambda_function.healer
   ]
 }
-
-
-
